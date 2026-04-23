@@ -1,0 +1,13 @@
+{
+  "TargetPath": "d:/ForPeople/test/.claude",
+  "Modes": [
+    {
+      "Name": "Зидан",
+      "Folder": "Z"
+    },
+    {
+      "Name": "Жанклод",
+      "Folder": "Claude"
+    }
+  ]
+}
