@@ -24,8 +24,6 @@ public class FileComparer
             return null;
         }
 
-        var targetHash = ComputeDirectoryHash(targetPath);
-
         foreach (var mode in modes)
         {
             var modePath = Path.Combine(modesBasePath, mode.Folder);
@@ -34,7 +32,14 @@ public class FileComparer
                 continue;
             }
 
-            var modeHash = ComputeDirectoryHash(modePath);
+            // Get files from mode to know which ones to compare in target
+            var modeFiles = _fileSystem.GetAllFiles(modePath, "*", System.IO.SearchOption.AllDirectories);
+            Array.Sort(modeFiles);
+
+            // Compute hash based only on files that exist in mode
+            var targetHash = ComputeDirectoryHash(targetPath, modeFiles, modePath);
+            var modeHash = ComputeDirectoryHash(modePath, modeFiles, modePath);
+
             if (targetHash == modeHash)
             {
                 return new CurrentModeResult { ModeName = mode.Name };
@@ -44,17 +49,24 @@ public class FileComparer
         return null;
     }
 
-    private string ComputeDirectoryHash(string path)
+    private string ComputeDirectoryHash(string basePath, string[] filesToCompare, string modePath)
     {
-        var files = _fileSystem.GetAllFiles(path, "*", System.IO.SearchOption.AllDirectories);
-        Array.Sort(files);
-
         using var md5 = MD5.Create();
-        foreach (var file in files)
+
+        foreach (var file in filesToCompare)
         {
-            var relativePath = file.Substring(path.Length).TrimStart(Path.DirectorySeparatorChar);
-            var size = _fileSystem.GetFileSize(file);
-            var modified = _fileSystem.GetLastWriteTime(file).Ticks;
+            // Get relative path from mode path
+            var relativePath = file.Substring(modePath.Length).TrimStart(Path.DirectorySeparatorChar);
+            // Build full path in the directory we're checking
+            var fullPath = Path.Combine(basePath, relativePath);
+
+            if (!_fileSystem.FileExists(fullPath))
+            {
+                return string.Empty; // File missing - hashes won't match
+            }
+
+            var size = _fileSystem.GetFileSize(fullPath);
+            var modified = _fileSystem.GetLastWriteTime(fullPath).Ticks;
 
             var hashInput = $"{relativePath}|{size}|{modified}";
             var inputBytes = Encoding.UTF8.GetBytes(hashInput);
