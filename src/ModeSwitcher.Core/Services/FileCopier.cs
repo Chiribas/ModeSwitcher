@@ -43,6 +43,9 @@ public class FileCopier
 
                 progress?.Report($"Copying {relativePath}...");
                 _fileSystem.CopyFile(file, destFile, overwrite: true);
+                // Preserve original file modification time for hash comparison
+                var originalTime = _fileSystem.GetLastWriteTime(file);
+                _fileSystem.SetLastWriteTime(destFile, originalTime);
             }
 
             progress?.Report("Copy completed.");

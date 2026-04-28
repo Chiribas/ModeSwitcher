@@ -112,4 +112,27 @@ public class FileCopierTests
         // Assert
         progressMessages.Should().HaveCountGreaterThanOrEqualTo(2);
     }
+
+    [Fact]
+    public async Task CopyAsync_PreservesFileModificationTime()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var copier = new FileCopier(fsMock);
+
+        var originalTime = new DateTime(2024, 1, 1, 12, 0, 0);
+
+        fsMock.DirectoryExists("source").Returns(true);
+        fsMock.GetAllFiles("source", "*", System.IO.SearchOption.AllDirectories)
+            .Returns(new[] { "source\\file.txt" });
+        fsMock.GetLastWriteTime("source\\file.txt").Returns(originalTime);
+        fsMock.FileExists("source\\file.txt").Returns(true);
+
+        // Act
+        await copier.CopyAsync("source", "target");
+
+        // Assert
+        fsMock.Received(1).CopyFile("source\\file.txt", "target\\file.txt", true);
+        fsMock.Received(1).SetLastWriteTime("target\\file.txt", originalTime);
+    }
 }

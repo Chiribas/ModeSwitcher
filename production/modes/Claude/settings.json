@@ -1,6 +1,6 @@
 {
   "env": {
-    "ANTHROPIC_AUTH_TOKEN": "514257084c334920b748483a0e2c3b6e.PV4y8gQI1FXC10ny",
+    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
     "API_TIMEOUT_MS": "3000000",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },

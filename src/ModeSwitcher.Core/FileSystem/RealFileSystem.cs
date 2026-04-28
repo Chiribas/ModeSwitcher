@@ -18,6 +18,9 @@ public class RealFileSystem : IFileSystem
 
     public DateTime GetLastWriteTime(string path) => File.GetLastWriteTime(path);
 
+    public void SetLastWriteTime(string path, DateTime time)
+        => File.SetLastWriteTime(path, time);
+
     public long GetFileSize(string path) => new FileInfo(path).Length;
 
     public void DeleteDirectory(string path, bool recursive)

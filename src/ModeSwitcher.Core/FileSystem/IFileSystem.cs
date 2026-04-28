@@ -9,6 +9,7 @@ public interface IFileSystem
     System.IO.Stream OpenRead(string path);
     void CopyFile(string source, string dest, bool overwrite);
     DateTime GetLastWriteTime(string path);
+    void SetLastWriteTime(string path, DateTime time);
     long GetFileSize(string path);
     void DeleteDirectory(string path, bool recursive);
 }

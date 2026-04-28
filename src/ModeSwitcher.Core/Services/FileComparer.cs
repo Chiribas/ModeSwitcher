@@ -62,7 +62,7 @@ public class FileComparer
 
             if (!_fileSystem.FileExists(fullPath))
             {
-                return string.Empty; // File missing - hashes won't match
+                return "MISSING_FILE"; // File missing - hashes won't match
             }
 
             var size = _fileSystem.GetFileSize(fullPath);

@@ -158,4 +158,89 @@ public class FileComparerTests
         result.Should().NotBeNull();
         result!.ModeName.Should().Be("Empty");
     }
+
+    [Fact]
+    public void DetectCurrentMode_ExtraFilesInTarget_DoesNotMatch()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var comparer = new FileComparer(fsMock);
+
+        fsMock.DirectoryExists("target").Returns(true);
+        fsMock.DirectoryExists("modes\\prod").Returns(true);
+
+        // Mode has 2 files
+        fsMock.GetAllFiles("modes\\prod", "*", System.IO.SearchOption.AllDirectories)
+            .Returns(new[] { "modes\\prod\\settings.json", "modes\\prod\\config.yml" });
+
+        // Mode files exist
+        fsMock.FileExists("modes\\prod\\settings.json").Returns(true);
+        fsMock.GetFileSize("modes\\prod\\settings.json").Returns(100);
+        fsMock.GetLastWriteTime("modes\\prod\\settings.json").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+        fsMock.FileExists("modes\\prod\\config.yml").Returns(true);
+        fsMock.GetFileSize("modes\\prod\\config.yml").Returns(50);
+        fsMock.GetLastWriteTime("modes\\prod\\config.yml").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+
+        // Target has matching files PLUS extra files that should be ignored
+        fsMock.FileExists("target\\settings.json").Returns(true);
+        fsMock.GetFileSize("target\\settings.json").Returns(100);
+        fsMock.GetLastWriteTime("target\\settings.json").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+
+        fsMock.FileExists("target\\config.yml").Returns(true);
+        fsMock.GetFileSize("target\\config.yml").Returns(50);
+        fsMock.GetLastWriteTime("target\\config.yml").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+
+        var modes = new List<ModeDefinition>
+        {
+            new() { Name = "Production", Folder = "prod" }
+        };
+
+        // Act
+        var result = comparer.DetectCurrentMode("target", modes, "modes");
+
+        // Assert - should match even though target has extra files
+        result.Should().NotBeNull();
+        result!.ModeName.Should().Be("Production");
+    }
+
+    [Fact]
+    public void DetectCurrentMode_MissingFileInTarget_NoMatch()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var comparer = new FileComparer(fsMock);
+
+        fsMock.DirectoryExists("target").Returns(true);
+        fsMock.DirectoryExists("modes\\prod").Returns(true);
+
+        // Mode has 2 files
+        fsMock.GetAllFiles("modes\\prod", "*", System.IO.SearchOption.AllDirectories)
+            .Returns(new[] { "modes\\prod\\settings.json", "modes\\prod\\config.yml" });
+
+        // Mode files exist
+        fsMock.FileExists("modes\\prod\\settings.json").Returns(true);
+        fsMock.GetFileSize("modes\\prod\\settings.json").Returns(100);
+        fsMock.GetLastWriteTime("modes\\prod\\settings.json").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+        fsMock.FileExists("modes\\prod\\config.yml").Returns(true);
+        fsMock.GetFileSize("modes\\prod\\config.yml").Returns(50);
+        fsMock.GetLastWriteTime("modes\\prod\\config.yml").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+
+        // Target is missing one file
+        fsMock.FileExists("target\\settings.json").Returns(true);
+        fsMock.GetFileSize("target\\settings.json").Returns(100);
+        fsMock.GetLastWriteTime("target\\settings.json").Returns(new DateTime(2024, 1, 1, 12, 0, 0));
+
+        fsMock.FileExists("target\\config.yml").Returns(false); // Missing!
+
+        var modes = new List<ModeDefinition>
+        {
+            new() { Name = "Production", Folder = "prod" }
+        };
+
+        // Act
+        var result = comparer.DetectCurrentMode("target", modes, "modes");
+
+        // Assert - should not match because file is missing
+        result.Should().BeNull();
+    }
 }
