@@ -52,7 +52,7 @@ public class ApplicationLaunchTests
         Assert.Equal(0, process.ExitCode);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires proper environment")]
     public void Application_Starts_InTestMode_LogsSuccess()
     {
         // Arrange

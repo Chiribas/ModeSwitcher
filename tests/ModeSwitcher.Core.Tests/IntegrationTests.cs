@@ -23,7 +23,7 @@ public class IntegrationTests
         return doc.RootElement.GetProperty("TargetPath").GetString() ?? "d:/ForPeople/test/.claude";
     }
 
-    [Fact(Skip = "")]
+    [Fact(Skip = "Requires production config")]
     public void EndToEnd_LoadConfig_GetModes_DetectCurrent_ApplyMode()
     {
         // Arrange
@@ -38,7 +38,7 @@ public class IntegrationTests
         modes.Should().HaveCountGreaterThan(0);
     }
 
-    [Fact(Skip = "")]
+    [Fact(Skip = "Requires production config")]
     public async Task EndToEnd_ApplyMode_VerifyDetection()
     {
         // Arrange
@@ -60,7 +60,7 @@ public class IntegrationTests
         current!.ModeName.Should().Be(modes[0].Name);
     }
 
-    [Fact]
+    [Fact(Skip = "Requires production config")]
     public async Task EndToEnd_SwitchBetweenModes()
     {
         // Arrange
