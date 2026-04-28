@@ -28,6 +28,14 @@ public partial class MainForm : Form
         base.OnFormClosing(e);
     }
 
+    private void NotifyIcon_MouseClick(object? sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+        {
+            RestoreWindow();
+        }
+    }
+
     private void NotifyIcon_DoubleClick(object? sender, EventArgs e)
     {
         RestoreWindow();

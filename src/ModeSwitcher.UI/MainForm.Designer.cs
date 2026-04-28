@@ -99,6 +99,7 @@ partial class MainForm
         this.notifyIcon.Icon = new Icon(typeof(MainForm).Assembly.GetManifestResourceStream("ModeSwitcher.UI.AppIcon.ico") ?? throw new InvalidOperationException("Icon not found"));
         this.notifyIcon.Text = "Code Switcher";
         this.notifyIcon.Visible = true;
+        this.notifyIcon.MouseClick += new MouseEventHandler(this.NotifyIcon_MouseClick);
         this.notifyIcon.DoubleClick += new EventHandler(this.NotifyIcon_DoubleClick);
         this.notifyIcon.ContextMenuStrip = this.trayMenu;
 
