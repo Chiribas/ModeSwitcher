@@ -5,7 +5,7 @@ partial class MainForm
 {
     private System.ComponentModel.IContainer components = null;
     private Label? lblCurrentMode;
-    private Panel? pnlModes;
+    private DataGridView? dgvModes;
     private Button? btnApply;
     private Button? btnSaveCurrent;
     private Button? btnRefresh;
@@ -29,7 +29,6 @@ partial class MainForm
     {
         this.components = new System.ComponentModel.Container();
         this.lblCurrentMode = new Label();
-        this.pnlModes = new Panel();
         this.btnApply = new Button();
         this.btnRefresh = new Button();
         this.btnExit = new Button();
@@ -47,13 +46,50 @@ partial class MainForm
         this.lblCurrentMode.Text = "Текущий режим: ...";
         this.lblCurrentMode.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
-        // pnlModes
-        this.pnlModes.Location = new Point(20, 60);
-        this.pnlModes.Name = "pnlModes";
-        this.pnlModes.Size = new Size(360, 150);
-        this.pnlModes.BorderStyle = BorderStyle.FixedSingle;
-        this.pnlModes.AutoScroll = true;
-        this.pnlModes.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        // dgvModes
+        this.dgvModes = new DataGridView();
+        this.dgvModes.Name = "dgvModes";
+        this.dgvModes.Location = new Point(20, 60);
+        this.dgvModes.Size = new Size(360, 150);
+        this.dgvModes.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        this.dgvModes.AllowUserToAddRows = false;
+        this.dgvModes.AllowUserToDeleteRows = false;
+        this.dgvModes.AllowUserToResizeRows = false;
+        this.dgvModes.MultiSelect = false;
+        this.dgvModes.RowHeadersVisible = false;
+        this.dgvModes.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        this.dgvModes.ReadOnly = true;
+        this.dgvModes.EditMode = DataGridViewEditMode.EditProgrammatically;
+        this.dgvModes.AutoGenerateColumns = false;
+        this.dgvModes.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        this.dgvModes.BackgroundColor = SystemColors.Window;
+        this.dgvModes.BorderStyle = BorderStyle.FixedSingle;
+
+        var colMode = new DataGridViewTextBoxColumn
+        {
+            Name = "colMode",
+            HeaderText = "Режим",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            ReadOnly = true,
+            SortMode = DataGridViewColumnSortMode.NotSortable
+        };
+        var colDelete = new DataGridViewButtonColumn
+        {
+            Name = "colDelete",
+            HeaderText = "",
+            Width = 90,
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+            Resizable = DataGridViewTriState.False,
+            SortMode = DataGridViewColumnSortMode.NotSortable,
+            Text = "Удалить",
+            UseColumnTextForButtonValue = true,
+            FlatStyle = FlatStyle.System
+        };
+        this.dgvModes.Columns.Add(colMode);
+        this.dgvModes.Columns.Add(colDelete);
+
+        this.dgvModes.CellContentClick += new DataGridViewCellEventHandler(this.DgvModes_CellContentClick);
+        this.dgvModes.SelectionChanged += new EventHandler(this.DgvModes_SelectionChanged);
 
         // btnApply
         this.btnApply.Location = new Point(20, 230);
@@ -123,10 +159,10 @@ partial class MainForm
 
         // MainForm
         this.Icon = new Icon(typeof(MainForm).Assembly.GetManifestResourceStream("ModeSwitcher.UI.AppIcon.ico") ?? throw new InvalidOperationException("Icon not found"));
-        this.ClientSize = new Size(400, 350);
-        this.MinimumSize = new Size(360, 300);
+        this.ClientSize = new Size(440, 350);
+        this.MinimumSize = new Size(400, 300);
         this.Controls.Add(this.lblCurrentMode);
-        this.Controls.Add(this.pnlModes);
+        this.Controls.Add(this.dgvModes);
         this.Controls.Add(this.btnApply);
         this.Controls.Add(this.btnSaveCurrent);
         this.Controls.Add(this.btnRefresh);

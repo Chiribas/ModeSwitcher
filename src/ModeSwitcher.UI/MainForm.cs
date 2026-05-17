@@ -11,6 +11,7 @@ public partial class MainForm : Form
     private List<ModeInfo>? _modes;
     private ModeInfo? _selectedMode;
     private bool _isExiting = false;
+    private const int DELETE_COLUMN_INDEX = 1;
 
     public MainForm(ICodeSwitcher switcher)
     {
@@ -69,7 +70,7 @@ public partial class MainForm : Form
                 notifyIcon!.Text = "Code Switcher - выберите режим";
             }
 
-            RenderModes();
+            RenderModesToGrid(currentMode);
             UpdateTrayMenu(currentMode);
             SetStatus("Готово");
         }
@@ -91,66 +92,87 @@ public partial class MainForm : Form
         };
     }
 
-    private void RenderModes()
+    private void RenderModesToGrid(CurrentModeResult? currentMode)
     {
-        pnlModes!.Controls.Clear();
+        dgvModes!.Rows.Clear();
 
         if (_modes is null || _modes.Count == 0)
         {
-            var lbl = new Label
-            {
-                Text = "Нет доступных режимов",
-                Location = new Point(10, 10),
-                AutoSize = true
-            };
-            pnlModes.Controls.Add(lbl);
+            var emptyIndex = dgvModes.Rows.Add("Нет доступных режимов", string.Empty);
+            var emptyRow = dgvModes.Rows[emptyIndex];
+            emptyRow.DefaultCellStyle.ForeColor = Color.Gray;
+            emptyRow.Tag = null;
+            emptyRow.Cells[DELETE_COLUMN_INDEX] = new DataGridViewTextBoxCell { Value = string.Empty };
             return;
         }
 
-        var y = 10;
+        var currentModeName = currentMode?.ModeName;
+
         foreach (var mode in _modes)
         {
             var displayName = GetDisplayName(mode.Name);
-            var radio = new RadioButton
-            {
-                Text = mode.IsActive ? $"{displayName} (активен)" : displayName,
-                Location = new Point(10, y),
-                Width = pnlModes.ClientSize.Width - 60,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                Checked = mode.IsActive,
-                Tag = mode,
-                Font = new Font("Segoe UI", 10F, mode.IsActive ? FontStyle.Bold : FontStyle.Regular)
-            };
+            var isActive = currentModeName == mode.Name;
+            var label = isActive ? $"{displayName} (активен)" : displayName;
 
-            radio.CheckedChanged += (s, e) =>
-            {
-                if (radio.Checked)
-                {
-                    _selectedMode = mode;
-                }
-            };
+            var rowIndex = dgvModes.Rows.Add(label, "Удалить");
+            var row = dgvModes.Rows[rowIndex];
+            row.Tag = mode;
 
-            if (mode.IsActive)
+            if (isActive)
             {
-                _selectedMode = mode;
+                row.DefaultCellStyle.Font = new Font(dgvModes.Font, FontStyle.Bold);
+                row.DefaultCellStyle.BackColor = Color.FromArgb(220, 245, 220);
+                row.DefaultCellStyle.ForeColor = Color.FromArgb(0, 100, 0);
+                row.DefaultCellStyle.SelectionBackColor = Color.FromArgb(180, 230, 180);
+                row.DefaultCellStyle.SelectionForeColor = Color.FromArgb(0, 60, 0);
             }
+        }
 
-            var modeForClosure = mode;
-            var btnDelete = new Button
-            {
-                Text = "×",
-                Size = new Size(25, 25),
-                Location = new Point(pnlModes.ClientSize.Width - 35, y),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                TabStop = false
-            };
-            btnDelete.Click += async (s, e) => await DeleteModeAsync(modeForClosure);
+        if (dgvModes.Rows.Count > 0)
+        {
+            dgvModes.ClearSelection();
+        }
+    }
 
-            pnlModes.Controls.Add(radio);
-            pnlModes.Controls.Add(btnDelete);
-            y += 35;
+    private void DgvModes_SelectionChanged(object? sender, EventArgs e)
+    {
+        if (dgvModes!.SelectedRows.Count > 0)
+        {
+            _selectedMode = dgvModes.SelectedRows[0].Tag as ModeInfo;
+        }
+        else
+        {
+            _selectedMode = null;
+        }
+    }
+
+    private async void DgvModes_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.ColumnIndex != DELETE_COLUMN_INDEX) return;
+        if (dgvModes!.Rows[e.RowIndex].Tag is not ModeInfo mode) return;
+
+        dgvModes.Enabled = false;
+        try
+        {
+            await HandleDeleteModeAsync(mode);
+        }
+        finally
+        {
+            dgvModes.Enabled = true;
+        }
+    }
+
+    private async Task HandleDeleteModeAsync(ModeInfo mode)
+    {
+        try
+        {
+            await DeleteModeAsync(mode);
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Ошибка: {ex.Message}");
+            MessageBox.Show($"Не удалось удалить режим:\n{ex.Message}", "Ошибка",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -162,19 +184,10 @@ public partial class MainForm : Form
             MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (confirm != DialogResult.Yes) return;
 
-        try
-        {
-            SetStatus($"Удаление режима \"{mode.Name}\"...");
-            await _switcher.DeleteModeAsync(mode.Name);
-            SetStatus($"Режим \"{mode.Name}\" удалён.");
-            LoadData();
-        }
-        catch (Exception ex)
-        {
-            SetStatus($"Ошибка: {ex.Message}");
-            MessageBox.Show($"Не удалось удалить режим:\n{ex.Message}", "Ошибка",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
+        SetStatus($"Удаление режима \"{mode.Name}\"...");
+        await _switcher.DeleteModeAsync(mode.Name);
+        SetStatus($"Режим \"{mode.Name}\" удалён.");
+        LoadData();
     }
 
     private void UpdateTrayMenu(CurrentModeResult? currentMode)

@@ -57,6 +57,7 @@ publish
 ZidansSwitcher
 production
 publish-smoke
+preview
 
 # Coding agent directories
 .in/
