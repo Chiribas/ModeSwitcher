@@ -8,9 +8,12 @@ public class CodeSwitcher : ICodeSwitcher
 {
     private readonly string _configPath;
     private readonly string _modesBasePath;
+    private readonly IFileSystem _fileSystem;
     private readonly ConfigLoader _configLoader;
     private readonly FileComparer _fileComparer;
     private readonly FileCopier _fileCopier;
+    private readonly ModeSaver _modeSaver;
+    private readonly ConfigWriter _configWriter;
 
     private SwitcherConfig? _cachedConfig;
 
@@ -30,13 +33,18 @@ public class CodeSwitcher : ICodeSwitcher
         IFileSystem fileSystem,
         ConfigLoader? configLoader = null,
         FileComparer? fileComparer = null,
-        FileCopier? fileCopier = null)
+        FileCopier? fileCopier = null,
+        ModeSaver? modeSaver = null,
+        ConfigWriter? configWriter = null)
     {
         _configPath = configPath;
         _modesBasePath = Path.Combine(Path.GetDirectoryName(configPath)!, "modes");
+        _fileSystem = fileSystem;
         _configLoader = configLoader ?? new ConfigLoader(fileSystem);
         _fileComparer = fileComparer ?? new FileComparer(fileSystem);
         _fileCopier = fileCopier ?? new FileCopier(fileSystem);
+        _modeSaver = modeSaver ?? new ModeSaver(fileSystem);
+        _configWriter = configWriter ?? new ConfigWriter(fileSystem);
     }
 
     public IReadOnlyList<ModeInfo> GetModes()
@@ -84,6 +92,41 @@ public class CodeSwitcher : ICodeSwitcher
         await _fileCopier.CopyAsync(modePath, config.TargetPath);
 
         return true;
+    }
+
+    public async Task SaveCurrentAsModeAsync(
+        string modeName,
+        string folderName,
+        IEnumerable<string> relativePaths,
+        bool overwrite)
+    {
+        var config = LoadConfig();
+        if (config is null)
+        {
+            throw new InvalidOperationException("Config could not be loaded.");
+        }
+
+        var newModePath = Path.Combine(_modesBasePath, folderName);
+
+        if (overwrite && _fileSystem.DirectoryExists(newModePath))
+        {
+            _fileSystem.DeleteDirectory(newModePath, recursive: true);
+        }
+
+        await _modeSaver.SaveAsync(config.TargetPath, newModePath, relativePaths);
+
+        var existing = config.Modes.FirstOrDefault(m => m.Name == modeName);
+        if (existing is not null)
+        {
+            existing.Folder = folderName;
+        }
+        else
+        {
+            config.Modes.Add(new ModeDefinition { Name = modeName, Folder = folderName });
+        }
+
+        _configWriter.Save(_configPath, config);
+        Reload();
     }
 
     public void Reload()

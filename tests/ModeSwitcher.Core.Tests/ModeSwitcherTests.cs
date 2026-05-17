@@ -251,6 +251,132 @@ public class CodeSwitcherTests
     }
 
     [Fact]
+    public async Task SaveCurrentAsModeAsync_NewMode_AddsDefinitionAndPersistsConfig()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var modeSaver = new ModeSaver(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition> { new() { Name = "Existing", Folder = "existing" } }
+        };
+
+        fsMock.OpenRead(Arg.Any<string>())
+            .Returns(_ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+                System.Text.Json.JsonSerializer.Serialize(initial))));
+
+        var writeStream = new MemoryStream();
+        fsMock.OpenWrite("test.json.tmp").Returns(writeStream);
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, modeSaver, configWriter);
+
+        // Act
+        await switcher.SaveCurrentAsModeAsync(
+            modeName: "NewMode",
+            folderName: "newmode",
+            relativePaths: new[] { "settings.json" },
+            overwrite: false);
+
+        // Assert
+        var saved = System.Text.Json.JsonSerializer.Deserialize<SwitcherConfig>(writeStream.ToArray());
+        saved!.Modes.Should().HaveCount(2);
+        saved.Modes.Last().Name.Should().Be("NewMode");
+        saved.Modes.Last().Folder.Should().Be("newmode");
+
+        fsMock.Received().CopyFile(
+            "C:\\Target\\settings.json",
+            Path.Combine(Path.GetDirectoryName("test.json")!, "modes", "newmode", "settings.json"),
+            true);
+    }
+
+    [Fact]
+    public async Task SaveCurrentAsModeAsync_OverwriteByName_UpdatesExistingDefinitionAndDeletesFolderFirst()
+    {
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var modeSaver = new ModeSaver(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition> { new() { Name = "Existing", Folder = "oldfolder" } }
+        };
+
+        fsMock.OpenRead(Arg.Any<string>())
+            .Returns(_ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+                System.Text.Json.JsonSerializer.Serialize(initial))));
+
+        var writeStream = new MemoryStream();
+        fsMock.OpenWrite("test.json.tmp").Returns(writeStream);
+
+        var newFolderPath = Path.Combine(Path.GetDirectoryName("test.json")!, "modes", "newfolder");
+        fsMock.DirectoryExists(newFolderPath).Returns(true);
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, modeSaver, configWriter);
+
+        // Act
+        await switcher.SaveCurrentAsModeAsync(
+            modeName: "Existing",
+            folderName: "newfolder",
+            relativePaths: new[] { "settings.json" },
+            overwrite: true);
+
+        // Assert
+        var saved = System.Text.Json.JsonSerializer.Deserialize<SwitcherConfig>(writeStream.ToArray());
+        saved!.Modes.Should().HaveCount(1);
+        saved.Modes[0].Name.Should().Be("Existing");
+        saved.Modes[0].Folder.Should().Be("newfolder");
+
+        fsMock.Received(1).DeleteDirectory(newFolderPath, true);
+    }
+
+    [Fact]
+    public async Task SaveCurrentAsModeAsync_InvalidatesConfigCache()
+    {
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var modeSaver = new ModeSaver(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition>()
+        };
+        var jsonInitial = System.Text.Json.JsonSerializer.Serialize(initial);
+
+        fsMock.OpenRead(Arg.Any<string>()).Returns(
+            _ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonInitial)));
+
+        var writeStream = new MemoryStream();
+        fsMock.OpenWrite("test.json.tmp").Returns(writeStream);
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, modeSaver, configWriter);
+
+        _ = switcher.GetModes();
+        await switcher.SaveCurrentAsModeAsync("X", "x", Array.Empty<string>(), overwrite: false);
+        _ = switcher.GetModes();
+
+        fsMock.ReceivedCalls()
+            .Count(c => c.GetMethodInfo().Name == nameof(IFileSystem.OpenRead))
+            .Should().BeGreaterThanOrEqualTo(2);
+    }
+
+    [Fact]
     public void ConfigPath_ReturnsConfigPath()
     {
         // Arrange
