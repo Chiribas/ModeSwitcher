@@ -113,7 +113,8 @@ public partial class MainForm : Form
             {
                 Text = mode.IsActive ? $"{displayName} (активен)" : displayName,
                 Location = new Point(10, y),
-                Width = pnlModes.Width - 20,
+                Width = pnlModes.ClientSize.Width - 30,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Checked = mode.IsActive,
                 Tag = mode,
                 Font = new Font("Segoe UI", 10F, mode.IsActive ? FontStyle.Bold : FontStyle.Regular)

@@ -44,12 +44,15 @@ partial class MainForm
         this.lblCurrentMode.Name = "lblCurrentMode";
         this.lblCurrentMode.Size = new Size(150, 20);
         this.lblCurrentMode.Text = "Текущий режим: ...";
+        this.lblCurrentMode.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
         // pnlModes
         this.pnlModes.Location = new Point(20, 60);
         this.pnlModes.Name = "pnlModes";
         this.pnlModes.Size = new Size(360, 150);
         this.pnlModes.BorderStyle = BorderStyle.FixedSingle;
+        this.pnlModes.AutoScroll = true;
+        this.pnlModes.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
 
         // btnApply
         this.btnApply.Location = new Point(20, 230);
@@ -57,6 +60,7 @@ partial class MainForm
         this.btnApply.Size = new Size(200, 35);
         this.btnApply.Text = "Применить выбранный режим";
         this.btnApply.UseVisualStyleBackColor = true;
+        this.btnApply.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         this.btnApply.Click += new EventHandler(this.BtnApply_Click);
 
         // btnRefresh
@@ -65,6 +69,7 @@ partial class MainForm
         this.btnRefresh.Size = new Size(100, 35);
         this.btnRefresh.Text = "Обновить";
         this.btnRefresh.UseVisualStyleBackColor = true;
+        this.btnRefresh.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         this.btnRefresh.Click += new EventHandler(this.BtnRefresh_Click);
 
         // btnAbout
@@ -75,6 +80,7 @@ partial class MainForm
         this.btnAbout.Text = "?";
         this.btnAbout.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
         this.btnAbout.UseVisualStyleBackColor = true;
+        this.btnAbout.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         this.btnAbout.Click += new EventHandler(this.BtnAbout_Click);
 
         // btnExit
@@ -83,6 +89,7 @@ partial class MainForm
         this.btnExit.Size = new Size(100, 35);
         this.btnExit.Text = "Выход";
         this.btnExit.UseVisualStyleBackColor = true;
+        this.btnExit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         this.btnExit.Click += new EventHandler(this.BtnExit_Click);
 
         // statusStrip
@@ -106,6 +113,7 @@ partial class MainForm
         // MainForm
         this.Icon = new Icon(typeof(MainForm).Assembly.GetManifestResourceStream("ModeSwitcher.UI.AppIcon.ico") ?? throw new InvalidOperationException("Icon not found"));
         this.ClientSize = new Size(400, 350);
+        this.MinimumSize = new Size(360, 300);
         this.Controls.Add(this.lblCurrentMode);
         this.Controls.Add(this.pnlModes);
         this.Controls.Add(this.btnApply);
@@ -113,8 +121,8 @@ partial class MainForm
         this.Controls.Add(this.btnAbout);
         this.Controls.Add(this.btnExit);
         this.Controls.Add(this.statusStrip);
-        this.FormBorderStyle = FormBorderStyle.FixedSingle;
-        this.MaximizeBox = false;
+        this.FormBorderStyle = FormBorderStyle.Sizable;
+        this.MaximizeBox = true;
         this.Name = "MainForm";
         this.StartPosition = FormStartPosition.CenterScreen;
         this.Text = "Code Switcher v1.0";
