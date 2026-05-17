@@ -7,6 +7,7 @@ partial class MainForm
     private Label? lblCurrentMode;
     private Panel? pnlModes;
     private Button? btnApply;
+    private Button? btnSaveCurrent;
     private Button? btnRefresh;
     private Button? btnAbout;
     private Button? btnExit;
@@ -63,6 +64,16 @@ partial class MainForm
         this.btnApply.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         this.btnApply.Click += new EventHandler(this.BtnApply_Click);
 
+        // btnSaveCurrent
+        this.btnSaveCurrent = new Button();
+        this.btnSaveCurrent.Location = new Point(230, 230);
+        this.btnSaveCurrent.Name = "btnSaveCurrent";
+        this.btnSaveCurrent.Size = new Size(150, 35);
+        this.btnSaveCurrent.Text = "Сохранить текущий…";
+        this.btnSaveCurrent.UseVisualStyleBackColor = true;
+        this.btnSaveCurrent.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        this.btnSaveCurrent.Click += new EventHandler(this.BtnSaveCurrent_Click);
+
         // btnRefresh
         this.btnRefresh.Location = new Point(20, 280);
         this.btnRefresh.Name = "btnRefresh";
@@ -117,6 +128,7 @@ partial class MainForm
         this.Controls.Add(this.lblCurrentMode);
         this.Controls.Add(this.pnlModes);
         this.Controls.Add(this.btnApply);
+        this.Controls.Add(this.btnSaveCurrent);
         this.Controls.Add(this.btnRefresh);
         this.Controls.Add(this.btnAbout);
         this.Controls.Add(this.btnExit);
