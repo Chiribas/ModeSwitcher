@@ -1,3 +1,17 @@
+*.swp
+*.*~
+.DS_Store
+*.pyc
+
+# Visual Studio Code
+.vscode
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -5,52 +19,47 @@
 [Rr]eleases/
 x64/
 x86/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
+build/out
 bld/
 [Bb]in/
+publish/
 [Oo]bj/
-[Ll]og/
-[Ll]ogs/
-
-# Visual Studio cache/options directory
+msbuild.log
+msbuild.err
+msbuild.wrn
+.dapp_build
+.dapp_secret_key
+.werf_secret_key
+# Visual Studio 2015
 .vs/
-.vsse/
 
-# Uncomment if you have tasks that create the project's static files in wwwroot
-#wwwroot/
+.idea/
+packages/
+.sonarqube/
+TestResults/
+node_modules
+src/.cr/
 
-# Visual Studio 2015/2017 cache/options directory
-.vscode/
+load/run
+load/.run
+gitlab-ci/run*
+gitlab-ci/code-review/venv/
+review.md
+previous_review.md
+k6/logs/*
+!k6/logs/.gitkeep
 
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
+src/ForPeople.WebApi/user.envs.json
+src/.claude/settings.local.json
+.claude/settings.local.json
+.claude/worktrees/
+docs/superpowers
+publish
+ZidansSwitcher
+production
+publish-smoke
 
-# User-specific files
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Mono auto generated files
-mono_crash.*
-
-# Build results of an NuGet package
-*.nupkg
-*.snupkg
-*.snupkg.metadata
-
-# MacOS
-.DS_Store
-
-# Logs
-*.log
-log.txt
-
-# Production files (keep config)
-production/*.exe
-production/*.pdb
-production/*.dll
+# Coding agent directories
+.in/
+.out/
+.tmp/
