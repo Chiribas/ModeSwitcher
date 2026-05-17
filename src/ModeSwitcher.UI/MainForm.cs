@@ -115,7 +115,7 @@ public partial class MainForm : Form
             {
                 Text = mode.IsActive ? $"{displayName} (активен)" : displayName,
                 Location = new Point(10, y),
-                Width = pnlModes.ClientSize.Width - 30,
+                Width = pnlModes.ClientSize.Width - 60,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Checked = mode.IsActive,
                 Tag = mode,
@@ -135,8 +135,45 @@ public partial class MainForm : Form
                 _selectedMode = mode;
             }
 
+            var modeForClosure = mode;
+            var btnDelete = new Button
+            {
+                Text = "×",
+                Size = new Size(25, 25),
+                Location = new Point(pnlModes.ClientSize.Width - 35, y),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                TabStop = false
+            };
+            btnDelete.Click += async (s, e) => await DeleteModeAsync(modeForClosure);
+
             pnlModes.Controls.Add(radio);
+            pnlModes.Controls.Add(btnDelete);
             y += 35;
+        }
+    }
+
+    private async Task DeleteModeAsync(ModeInfo mode)
+    {
+        var confirm = MessageBox.Show(this,
+            $"Удалить режим \"{mode.Name}\"?",
+            "Подтверждение",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        if (confirm != DialogResult.Yes) return;
+
+        try
+        {
+            SetStatus($"Удаление режима \"{mode.Name}\"...");
+            await _switcher.DeleteModeAsync(mode.Name);
+            SetStatus($"Режим \"{mode.Name}\" удалён.");
+            LoadData();
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Ошибка: {ex.Message}");
+            MessageBox.Show($"Не удалось удалить режим:\n{ex.Message}", "Ошибка",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

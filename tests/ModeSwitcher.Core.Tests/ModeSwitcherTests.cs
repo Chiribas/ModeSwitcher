@@ -393,4 +393,156 @@ public class CodeSwitcherTests
         // Assert
         path.Should().Be("test.json");
     }
+
+    [Fact]
+    public async Task DeleteModeAsync_ExistingMode_RemovesFolderAndUpdatesConfig()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition>
+            {
+                new() { Name = "A", Folder = "a" },
+                new() { Name = "B", Folder = "b" }
+            }
+        };
+
+        fsMock.OpenRead(Arg.Any<string>())
+            .Returns(_ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+                System.Text.Json.JsonSerializer.Serialize(initial))));
+
+        var writeStream = new MemoryStream();
+        fsMock.OpenWrite("test.json.tmp").Returns(writeStream);
+
+        var folderPath = Path.Combine(Path.GetDirectoryName("test.json")!, "modes", "a");
+        fsMock.DirectoryExists(folderPath).Returns(true);
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, configWriter: configWriter);
+
+        // Act
+        await switcher.DeleteModeAsync("A");
+
+        // Assert
+        fsMock.Received(1).DeleteDirectory(folderPath, true);
+
+        var saved = System.Text.Json.JsonSerializer.Deserialize<SwitcherConfig>(writeStream.ToArray());
+        saved!.Modes.Should().HaveCount(1);
+        saved.Modes[0].Name.Should().Be("B");
+    }
+
+    [Fact]
+    public async Task DeleteModeAsync_NonExistentMode_DoesNothing()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition> { new() { Name = "A", Folder = "a" } }
+        };
+
+        fsMock.OpenRead(Arg.Any<string>())
+            .Returns(_ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+                System.Text.Json.JsonSerializer.Serialize(initial))));
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, configWriter: configWriter);
+
+        // Act
+        await switcher.DeleteModeAsync("Ghost");
+
+        // Assert: no folder deleted, no config write
+        fsMock.DidNotReceive().DeleteDirectory(Arg.Any<string>(), Arg.Any<bool>());
+        fsMock.DidNotReceive().OpenWrite(Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task DeleteModeAsync_FolderMissingOnDisk_StillUpdatesConfig()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition> { new() { Name = "A", Folder = "a" } }
+        };
+
+        fsMock.OpenRead(Arg.Any<string>())
+            .Returns(_ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(
+                System.Text.Json.JsonSerializer.Serialize(initial))));
+
+        var writeStream = new MemoryStream();
+        fsMock.OpenWrite("test.json.tmp").Returns(writeStream);
+
+        var folderPath = Path.Combine(Path.GetDirectoryName("test.json")!, "modes", "a");
+        fsMock.DirectoryExists(folderPath).Returns(false);
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, configWriter: configWriter);
+
+        // Act
+        await switcher.DeleteModeAsync("A");
+
+        // Assert: no DeleteDirectory call, but config still rewritten
+        fsMock.DidNotReceive().DeleteDirectory(Arg.Any<string>(), Arg.Any<bool>());
+
+        var saved = System.Text.Json.JsonSerializer.Deserialize<SwitcherConfig>(writeStream.ToArray());
+        saved!.Modes.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeleteModeAsync_InvalidatesConfigCache()
+    {
+        // Arrange
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+        var configWriter = new ConfigWriter(fsMock);
+
+        var initial = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition> { new() { Name = "A", Folder = "a" } }
+        };
+        var jsonInitial = System.Text.Json.JsonSerializer.Serialize(initial);
+
+        fsMock.OpenRead(Arg.Any<string>())
+            .Returns(_ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonInitial)));
+
+        var writeStream = new MemoryStream();
+        fsMock.OpenWrite("test.json.tmp").Returns(writeStream);
+
+        var folderPath = Path.Combine(Path.GetDirectoryName("test.json")!, "modes", "a");
+        fsMock.DirectoryExists(folderPath).Returns(true);
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher(
+            "test.json", fsMock, configLoader, fileComparer, fileCopier, configWriter: configWriter);
+
+        _ = switcher.GetModes(); // primes cache
+        await switcher.DeleteModeAsync("A");
+        _ = switcher.GetModes();
+
+        fsMock.ReceivedCalls()
+            .Count(c => c.GetMethodInfo().Name == nameof(IFileSystem.OpenRead))
+            .Should().BeGreaterThanOrEqualTo(2);
+    }
 }

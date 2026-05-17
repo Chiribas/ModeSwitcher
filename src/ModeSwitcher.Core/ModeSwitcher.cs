@@ -129,6 +129,33 @@ public class CodeSwitcher : ICodeSwitcher
         Reload();
     }
 
+    public Task DeleteModeAsync(string modeName)
+    {
+        var config = LoadConfig();
+        if (config is null)
+        {
+            throw new InvalidOperationException("Config could not be loaded.");
+        }
+
+        var def = config.Modes.FirstOrDefault(m => m.Name == modeName);
+        if (def is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var modePath = Path.Combine(_modesBasePath, def.Folder);
+        if (_fileSystem.DirectoryExists(modePath))
+        {
+            _fileSystem.DeleteDirectory(modePath, recursive: true);
+        }
+
+        config.Modes.Remove(def);
+        _configWriter.Save(_configPath, config);
+        Reload();
+
+        return Task.CompletedTask;
+    }
+
     public void Reload()
     {
         _cachedConfig = null;
