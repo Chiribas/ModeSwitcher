@@ -13,6 +13,11 @@ public class RealFileSystem : IFileSystem
 
     public System.IO.Stream OpenRead(string path) => File.OpenRead(path);
 
+    public System.IO.Stream OpenWrite(string path) => File.Create(path);
+
+    public void MoveFile(string source, string dest, bool overwrite)
+        => File.Move(source, dest, overwrite);
+
     public void CopyFile(string source, string dest, bool overwrite)
         => File.Copy(source, dest, overwrite);
 

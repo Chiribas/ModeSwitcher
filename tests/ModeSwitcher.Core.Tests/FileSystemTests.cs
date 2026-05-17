@@ -142,4 +142,56 @@ public class FileSystemTests
         // Cleanup
         File.Delete(tempFile);
     }
+
+    [Fact]
+    public void OpenWrite_CreatesFileAndReturnsWritableStream()
+    {
+        // Arrange
+        var fs = new RealFileSystem();
+        var tempPath = Path.Combine(Path.GetTempPath(), $"openwrite_test_{Guid.NewGuid():N}.txt");
+
+        try
+        {
+            // Act
+            using (var stream = fs.OpenWrite(tempPath))
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes("hello");
+                stream.Write(bytes, 0, bytes.Length);
+            }
+
+            // Assert
+            File.Exists(tempPath).Should().BeTrue();
+            File.ReadAllText(tempPath).Should().Be("hello");
+        }
+        finally
+        {
+            if (File.Exists(tempPath)) File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public void MoveFile_WithOverwrite_ReplacesExistingFile()
+    {
+        // Arrange
+        var fs = new RealFileSystem();
+        var src = Path.Combine(Path.GetTempPath(), $"move_src_{Guid.NewGuid():N}.txt");
+        var dst = Path.Combine(Path.GetTempPath(), $"move_dst_{Guid.NewGuid():N}.txt");
+        File.WriteAllText(src, "fresh");
+        File.WriteAllText(dst, "stale");
+
+        try
+        {
+            // Act
+            fs.MoveFile(src, dst, overwrite: true);
+
+            // Assert
+            File.Exists(src).Should().BeFalse();
+            File.ReadAllText(dst).Should().Be("fresh");
+        }
+        finally
+        {
+            if (File.Exists(src)) File.Delete(src);
+            if (File.Exists(dst)) File.Delete(dst);
+        }
+    }
 }
