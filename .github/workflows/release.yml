@@ -21,11 +21,8 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore
-        run: dotnet restore src/ModeSwitcher.sln
-
       - name: Test
-        run: dotnet test src/ModeSwitcher.sln -c Release --no-restore
+        run: dotnet test src/ModeSwitcher.sln
 
       - name: Publish single-file exe
         run: >
@@ -33,7 +30,7 @@ jobs:
           -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
-          --no-restore -o publish
+          -o publish
 
       - name: Assemble release bundle
         shell: pwsh
