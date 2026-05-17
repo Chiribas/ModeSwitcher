@@ -110,4 +110,61 @@ public class ModeSaverTests
         result.Files[0].RelativePath.Should().Be("settings.json");
         result.Files[0].InCurrentMode.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task SaveAsync_CopiesSelectedFilesPreservingTimestamps()
+    {
+        var fsMock = Substitute.For<IFileSystem>();
+        var saver = new ModeSaver(fsMock);
+
+        fsMock.DirectoryExists("modes\\new").Returns(false);
+        var ts = new DateTime(2024, 1, 1, 12, 0, 0);
+        fsMock.GetLastWriteTime(Arg.Any<string>()).Returns(ts);
+
+        var rels = new[] { "settings.json", "CLAUDE.md" };
+
+        await saver.SaveAsync("C:\\Target", "modes\\new", rels);
+
+        fsMock.Received(1).CreateDirectory("modes\\new");
+        fsMock.Received(1).CopyFile("C:\\Target\\settings.json", "modes\\new\\settings.json", true);
+        fsMock.Received(1).CopyFile("C:\\Target\\CLAUDE.md", "modes\\new\\CLAUDE.md", true);
+        fsMock.Received(1).SetLastWriteTime("modes\\new\\settings.json", ts);
+        fsMock.Received(1).SetLastWriteTime("modes\\new\\CLAUDE.md", ts);
+    }
+
+    [Fact]
+    public async Task SaveAsync_CreatesNestedDirectories()
+    {
+        var fsMock = Substitute.For<IFileSystem>();
+        var saver = new ModeSaver(fsMock);
+
+        fsMock.DirectoryExists("modes\\new").Returns(false);
+        fsMock.DirectoryExists("modes\\new\\agents").Returns(false);
+
+        await saver.SaveAsync("C:\\Target", "modes\\new", new[] { "agents\\zidan.md" });
+
+        fsMock.Received().CreateDirectory("modes\\new");
+        fsMock.Received().CreateDirectory("modes\\new\\agents");
+        fsMock.Received(1).CopyFile(
+            "C:\\Target\\agents\\zidan.md",
+            "modes\\new\\agents\\zidan.md",
+            true);
+    }
+
+    [Fact]
+    public async Task SaveAsync_TargetFolderExists_DoesNotRecreate()
+    {
+        var fsMock = Substitute.For<IFileSystem>();
+        var saver = new ModeSaver(fsMock);
+
+        fsMock.DirectoryExists("modes\\new").Returns(true);
+
+        await saver.SaveAsync("C:\\Target", "modes\\new", new[] { "settings.json" });
+
+        fsMock.DidNotReceive().CreateDirectory("modes\\new");
+        fsMock.Received(1).CopyFile(
+            "C:\\Target\\settings.json",
+            "modes\\new\\settings.json",
+            true);
+    }
 }
