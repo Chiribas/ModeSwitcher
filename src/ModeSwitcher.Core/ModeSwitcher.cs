@@ -86,6 +86,11 @@ public class CodeSwitcher : ICodeSwitcher
         return true;
     }
 
+    public void Reload()
+    {
+        _cachedConfig = null;
+    }
+
     private SwitcherConfig? LoadConfig()
     {
         if (_cachedConfig is not null)

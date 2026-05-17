@@ -207,6 +207,50 @@ public class CodeSwitcherTests
     }
 
     [Fact]
+    public void Reload_AfterFirstLoad_RereadsConfigFromDisk()
+    {
+        // Arrange: two different configs on consecutive reads
+        var fsMock = Substitute.For<IFileSystem>();
+        var configLoader = new ConfigLoader(fsMock);
+        var fileComparer = new FileComparer(fsMock);
+        var fileCopier = new FileCopier(fsMock);
+
+        var configV1 = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition> { new() { Name = "A", Folder = "a" } }
+        };
+        var configV2 = new SwitcherConfig
+        {
+            TargetPath = "C:\\Target",
+            Modes = new List<ModeDefinition>
+            {
+                new() { Name = "A", Folder = "a" },
+                new() { Name = "B", Folder = "b" }
+            }
+        };
+
+        var jsonV1 = System.Text.Json.JsonSerializer.Serialize(configV1);
+        var jsonV2 = System.Text.Json.JsonSerializer.Serialize(configV2);
+
+        fsMock.OpenRead(Arg.Any<string>()).Returns(
+            _ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonV1)),
+            _ => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonV2))
+        );
+
+        var switcher = new ModeSwitcher.Core.CodeSwitcher("test.json", fsMock, configLoader, fileComparer, fileCopier);
+
+        // Act
+        var before = switcher.GetModes();
+        switcher.Reload();
+        var after = switcher.GetModes();
+
+        // Assert
+        before.Should().HaveCount(1);
+        after.Should().HaveCount(2);
+    }
+
+    [Fact]
     public void ConfigPath_ReturnsConfigPath()
     {
         // Arrange
