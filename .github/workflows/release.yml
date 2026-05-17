@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore src/ModeSwitcher.sln
+
+      - name: Test
+        run: dotnet test src/ModeSwitcher.sln -c Release --no-restore
+
+      - name: Publish single-file exe
+        run: >
+          dotnet publish src/ModeSwitcher.UI/ModeSwitcher.UI.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          --no-restore -o publish
+
+      - name: Assemble release bundle
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $bundleName = "ModeSwitcher-$tag"
+          $stagingRoot = "staging"
+          $bundleDir = Join-Path $stagingRoot $bundleName
+
+          New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
+
+          Copy-Item publish/ModeSwitcher.UI.exe -Destination $bundleDir
+          Copy-Item assets/default-release/modeswitcher.json -Destination $bundleDir
+          Copy-Item assets/default-release/modes -Destination $bundleDir -Recurse
+
+          Get-ChildItem -Path $bundleDir -Recurse -Force -Filter .gitkeep | Remove-Item -Force
+
+          $zipPath = "$bundleName.zip"
+          Compress-Archive -Path $bundleDir -DestinationPath $zipPath -Force
+
+          "ASSET_PATH=$zipPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: ${{ env.ASSET_PATH }}
